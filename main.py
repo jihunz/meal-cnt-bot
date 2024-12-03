@@ -131,7 +131,7 @@ if __name__ == '__main__':
     send_email(meal_cnt, creds)
 
     scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=14, minute=30)
+    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=5)
     print('[ meal_cnt_bot 스케줄러가 시작되었습니다. Ctrl+C로 종료하세요. ]')
     try:
         scheduler.start()
