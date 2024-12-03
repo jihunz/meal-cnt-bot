@@ -21,4 +21,4 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY . .
 
 # 컨테이너 시작 시 실행될 명령
-CMD ["python", "main.py"]
+CMD ["python", "-u","main.py"]

@@ -102,6 +102,7 @@ def get_meal_cnt(creds):
             person_list = event['summary'].split('-')[0]
             if is_in_exclude_list(person_list):
                 continue
+            # if datetime
 
             if '외' in person_list:
                 number_headcount = int(''.join(re.findall(r'\d+', person_list)))
