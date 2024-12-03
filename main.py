@@ -59,7 +59,7 @@ def send_email(result, creds):
     today = datetime.datetime.now(tz)
     formatted_today = today.strftime('%Y-%m-%d')
     subject = f'[{formatted_today}] 연구소 식사 인원: {result} 명'
-    message_text = f'오늘의 식사 인원은 {result}명입니다.'
+    message_text = ''
 
     message = MIMEText(message_text)
     message['to'] = to
@@ -69,9 +69,9 @@ def send_email(result, creds):
 
     try:
         message = gmail_service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
-        print(f'[{formatted_today}] 이메일이 성공적으로 전송되었습니다 -> Message Id: {message["id"]}')
+        print(f'[{today}] 이메일이 성공적으로 전송되었습니다 -> Message Id: {message["id"]}')
     except Exception as e:
-        print(f'[{formatted_today}] 이메일 전송 중 오류가 발생했습니다: {e}')
+        print(f'[{today}] 이메일 전송 중 오류가 발생했습니다: {e}')
 
 def get_meal_cnt(creds):
     num_to_minus = 0
@@ -100,9 +100,11 @@ def get_meal_cnt(creds):
 
         for event in event_list:
             person_list = event['summary'].split('-')[0]
+
             if is_in_exclude_list(person_list):
                 continue
-            # if datetime
+            if 'dateTime' in event['start']:
+                continue
 
             if '외' in person_list:
                 number_headcount = int(''.join(re.findall(r'\d+', person_list)))
