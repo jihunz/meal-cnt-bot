@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  meal_cnt_bot:
+    build:
+      context: .
+    container_name: meal_cnt_bot
+    volumes:
+      - .:/app
+    environment:
+      - TZ=Asia/Seoul
+    restart: unless-stopped
