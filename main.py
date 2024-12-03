@@ -53,7 +53,7 @@ def get_credentials():
 def send_email(result, creds):
     gmail_service = build('gmail', 'v1', credentials=creds)
 
-    to = 'jhjang@vetec.co.kr'
+    to = 'hehan@vetec.co.kr'
     sender = 'jhjang@vetec.co.kr'
     tz = pytz.timezone('Asia/Seoul')
     today = datetime.datetime.now(tz)
