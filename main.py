@@ -68,7 +68,7 @@ def get_credentials_v2():
 def send_email(result, creds):
     gmail_service = build('gmail', 'v1', credentials=creds)
 
-    to = 'jhjang@vetec.co.kr'
+    to = 'hehan@vetec.co.kr'
     sender = 'jhjang@vetec.co.kr'
     tz = pytz.timezone('Asia/Seoul')
     today = datetime.datetime.now(tz)
@@ -149,7 +149,7 @@ def job():
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=13, minute=35)
+    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
     print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
     try:
         scheduler.start()
