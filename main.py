@@ -83,7 +83,7 @@ def send_email(result, creds):
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
     try:
-        message = gmail_service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
+        gmail_service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
         print(f'[{today}] 이메일이 성공적으로 전송되었습니다 -> To: {to}')
     except Exception as e:
         print(f'[{today}] 이메일 전송 중 오류가 발생했습니다: {e}')
