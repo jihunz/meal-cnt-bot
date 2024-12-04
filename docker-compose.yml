@@ -6,7 +6,6 @@ services:
       context: .
     container_name: meal_cnt_bot
     volumes:
-      - .:/app
       - ./config:/app/config
     environment:
       - TZ=Asia/Seoul

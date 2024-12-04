@@ -28,7 +28,7 @@ with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
 
 def get_credentials():
     creds = None
-    token_path = 'token.json'
+    token_path = 'config/token.json'
     # 기존에 저장된 토큰이 있으면 로드
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, config['SCOPES'])

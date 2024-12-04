@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # 소스 코드 복사
-#COPY . .
+COPY . .
 
 # 컨테이너 시작 시 실행될 명령
 CMD ["python", "-u","main.py"]
