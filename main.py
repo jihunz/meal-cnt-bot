@@ -12,17 +12,19 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2 import service_account
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 # 설정 파일 경로
-CONFIG_FILE = 'config.json'
+CONFIG_FILE = 'config/config.json'
 TOTAL_COMM_HEADCOUNT = 7
 EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈']
 
 # 설정 파일 로드
 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
     config = json.load(f)
+
 
 def get_credentials():
     creds = None
@@ -42,6 +44,7 @@ def get_credentials():
             if os.path.exists(token_path):
                 os.remove(token_path)
             # 재인증 수행
+            cred_ = json.dumps(config['OAUTH_CRED'])
             flow = InstalledAppFlow.from_client_secrets_file(
                 config['OAUTH_CRED'], config['SCOPES'])
             creds = flow.run_local_server(port=0)
@@ -50,10 +53,22 @@ def get_credentials():
                 token.write(creds.to_json())
     return creds
 
+
+def get_credentials_v2():
+    credentials = service_account.Credentials.from_service_account_file(
+        'config/service_account_key.json',
+        scopes=config['SCOPES']
+    )
+
+    # 도메인 전체 권한 위임을 위해 사용자 설정
+    cred = credentials.with_subject('jhjang@vetec.co.kr')
+    return cred
+
+
 def send_email(result, creds):
     gmail_service = build('gmail', 'v1', credentials=creds)
 
-    to = 'hehan@vetec.co.kr'
+    to = 'jhjang@vetec.co.kr'
     sender = 'jhjang@vetec.co.kr'
     tz = pytz.timezone('Asia/Seoul')
     today = datetime.datetime.now(tz)
@@ -72,6 +87,7 @@ def send_email(result, creds):
         print(f'[{today}] 이메일이 성공적으로 전송되었습니다 -> Message Id: {message["id"]}')
     except Exception as e:
         print(f'[{today}] 이메일 전송 중 오류가 발생했습니다: {e}')
+
 
 def get_meal_cnt(creds):
     num_to_minus = 0
@@ -119,14 +135,17 @@ def get_meal_cnt(creds):
     print(f'[{today}] 연구소 식사 인원: {result} 명')
     return result
 
+
 def is_in_exclude_list(person_list):
     names = [name.strip() for name in person_list.split(',')]
     return any(name in EXCLUDE_LIST for name in names)
+
 
 def job():
     creds = get_credentials()
     meal_cnt = get_meal_cnt(creds)
     send_email(meal_cnt, creds)
+
 
 if __name__ == '__main__':
     creds = get_credentials()
