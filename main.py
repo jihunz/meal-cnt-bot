@@ -18,8 +18,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
-TOTAL_COMM_HEADCOUNT = 7
-EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈']
+TOTAL_COMM_HEADCOUNT = 6
+EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
 
 # 설정 파일 로드
 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
