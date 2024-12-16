@@ -286,8 +286,6 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
-config/config.json
-config/token.json
-google_oauth_cred.json
+config/*.json
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python

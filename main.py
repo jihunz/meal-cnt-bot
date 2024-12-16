@@ -19,7 +19,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
 TOTAL_COMM_HEADCOUNT = 6
-EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
+DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
+meal_exclude_list = []
 
 # 설정 파일 로드
 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -115,30 +116,34 @@ def get_meal_cnt(creds):
             print(f'[{today}] 이벤트가 없습니다.')
 
         for event in event_list:
-            person_list = event['summary'].split('-')[0]
-
-            if is_in_exclude_list(person_list):
-                continue
+            # 시간이 특정된 이벤트는 온라인 회의로 가정하여 건너뜀
             if 'dateTime' in event['start']:
                 continue
 
-            if '외' in person_list:
-                number_headcount = int(''.join(re.findall(r'\d+', person_list)))
-                num_to_minus += (1 + number_headcount)
-            else:
-                head_count = len(person_list.split(','))
-                num_to_minus += head_count
+            person_list = [name.strip() for name in event['summary'].split('-')[0].split(',')]
+
+            for name in person_list:
+                # 이벤트 참여자 이름이 제외할 리스트 혹은 식사 인원 제외 리스트에 속해 있으면 제외
+                if name in DEFAULT_EXCLUDE_LIST or name in meal_exclude_list:
+                    continue
+
+                # 아니라면 개수 헤아림
+                meal_exclude_list.append(name)
+                num_to_minus += 1
+
+            # 이벤트명에 '외'가 포함될 경우 이벤트 참여자 + 인원수 만큼 셈
+            # if '외' in person_list_str:
+            #     number_headcount = int(''.join(re.findall(r'\d+', person_list_str)))
+            #     num_to_minus += (1 + number_headcount)
+            #     continue
 
     result = TOTAL_COMM_HEADCOUNT - num_to_minus
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
-    print(f'[{today}] 연구소 식사 인원: {result} 명')
+
+    print(f'[{today}] 연구소 식사 인원: {result} 명 -> 전체 {TOTAL_COMM_HEADCOUNT} / 제외: {num_to_minus}{meal_exclude_list}')
+
     return result
-
-
-def is_in_exclude_list(person_list):
-    names = [name.strip() for name in person_list.split(',')]
-    return any(name in EXCLUDE_LIST for name in names)
 
 
 def job():
