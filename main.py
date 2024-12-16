@@ -1,20 +1,19 @@
 from __future__ import print_function
-import datetime
-import os
-import pytz
-import re
+
 import base64
+import datetime
 import json
+import os
 from email.mime.text import MIMEText
 
+import pytz
+from apscheduler.schedulers.blocking import BlockingScheduler
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from google.oauth2 import service_account
-
-from apscheduler.schedulers.blocking import BlockingScheduler
 
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
@@ -141,7 +140,7 @@ def get_meal_cnt(creds):
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
 
-    print(f'[{today}] 연구소 식사 인원: {result} 명 -> 전체 {TOTAL_COMM_HEADCOUNT} / 제외: {num_to_minus}{meal_exclude_list}')
+    print(f'[{today}] 연구소 식사 인원: {result} 명 -> 제외: {num_to_minus}{meal_exclude_list} / 전체 {TOTAL_COMM_HEADCOUNT}')
 
     return result
 
