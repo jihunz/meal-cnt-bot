@@ -151,14 +151,10 @@ def job():
 
 
 if __name__ == '__main__':
-    creds = get_credentials()
-    meal_cnt = get_meal_cnt(creds)
-    send_email(meal_cnt, creds)
-
-    # scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    # scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
-    # print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
-    # try:
-    #     scheduler.start()
-    # except (KeyboardInterrupt, SystemExit):
-    #     print('[ meal_cnt_bot 스케줄러가 종료되었습니다 ]')
+    scheduler = BlockingScheduler(timezone='Asia/Seoul')
+    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
+    print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
+    try:
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        print('[ meal_cnt_bot 스케줄러가 종료되었습니다 ]')
