@@ -19,7 +19,6 @@ from googleapiclient.discovery import build
 CONFIG_FILE = 'config/config.json'
 TOTAL_COMM_HEADCOUNT = 6
 DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
-meal_exclude_list = []
 
 # 설정 파일 로드
 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -91,6 +90,7 @@ def send_email(result, creds):
 
 def get_meal_cnt(creds):
     num_to_minus = 0
+    meal_exclude_list = []
 
     # API 서비스 생성
     service = build('calendar', 'v3', credentials=creds)
@@ -99,8 +99,7 @@ def get_meal_cnt(creds):
     tz = pytz.timezone('Asia/Seoul')
     today = datetime.datetime.now(tz)
     today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + datetime.timedelta(days=1)
-
+    today_end = (today_start + datetime.timedelta(days=1)) - datetime.timedelta(seconds=1)
     # ISO 포맷으로 변환
     time_min = today_start.isoformat()
     time_max = today_end.isoformat()
@@ -140,7 +139,7 @@ def get_meal_cnt(creds):
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
 
-    print(f'[{today}] 연구소 식사 인원: {result} 명 -> 제외: {num_to_minus}{meal_exclude_list} / 전체 {TOTAL_COMM_HEADCOUNT}')
+    print(f'[{today}] 연구소 식사 인원: {result} 명 -> {TOTAL_COMM_HEADCOUNT}(전체) - {num_to_minus}(제외) -> {meal_exclude_list}' )
 
     return result
 
@@ -152,10 +151,14 @@ def job():
 
 
 if __name__ == '__main__':
-    scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
-    print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
-    try:
-        scheduler.start()
-    except (KeyboardInterrupt, SystemExit):
-        print('[ meal_cnt_bot 스케줄러가 종료되었습니다 ]')
+    creds = get_credentials()
+    meal_cnt = get_meal_cnt(creds)
+    send_email(meal_cnt, creds)
+
+    # scheduler = BlockingScheduler(timezone='Asia/Seoul')
+    # scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
+    # print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
+    # try:
+    #     scheduler.start()
+    # except (KeyboardInterrupt, SystemExit):
+    #     print('[ meal_cnt_bot 스케줄러가 종료되었습니다 ]')
