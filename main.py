@@ -144,7 +144,7 @@ def get_meal_cnt(creds):
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
 
-    print(f'[{today}] 연구소 식사 인원 || 포함: {result}{meal_cnt_list}, 제외: {result}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
+    print(f'[{today}] 연구소 식사 인원 || 포함: {result}{meal_cnt_list}, 제외: {len(meal_exclude_list)}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
 
     return result
 
