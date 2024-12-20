@@ -17,7 +17,6 @@ from googleapiclient.discovery import build
 
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
-TOTAL_COMM_HEADCOUNT = 6
 DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
 meal_exclude_list = []
 
@@ -68,7 +67,8 @@ def get_credentials_v2():
 def send_email(result, creds):
     gmail_service = build('gmail', 'v1', credentials=creds)
 
-    to = 'hehan@vetec.co.kr'
+    # to = 'hehan@vetec.co.kr'
+    to = 'jhjang@vetec.co.kr'
     sender = 'jhjang@vetec.co.kr'
     tz = pytz.timezone('Asia/Seoul')
     today = datetime.datetime.now(tz)
@@ -90,7 +90,8 @@ def send_email(result, creds):
 
 
 def get_meal_cnt(creds):
-    num_to_minus = 0
+    meal_cnt_list = ['장지훈', '김태준', '배건길', '서대원', '조주형', '김형진']
+    default_meal_cnt = len(meal_cnt_list)
 
     # API 서비스 생성
     service = build('calendar', 'v3', credentials=creds)
@@ -122,13 +123,17 @@ def get_meal_cnt(creds):
             person_list = [name.strip() for name in event['summary'].split('-')[0].split(',')]
 
             for name in person_list:
-                # 이벤트 참여자 이름이 제외할 리스트 혹은 식사 인원 제외 리스트에 속해 있으면 제외
-                if name in DEFAULT_EXCLUDE_LIST or name in meal_exclude_list:
+                # 이벤트 참여자 이름이 제외할 리스트, 식사 인원 제외 리스트에 속해 있거나 참여자 이름이 연구소 식사 인원 목록에 포함되어 있지 않으면 제외
+                if name in DEFAULT_EXCLUDE_LIST:
+                    continue
+                if name in meal_exclude_list:
+                    continue
+                if name not in meal_cnt_list:
                     continue
 
-                # 아니라면 개수 헤아림
+                # 아니라면 식사 인원 리스트에서 이벤트 참여자 삭제
+                meal_cnt_list.remove(name)
                 meal_exclude_list.append(name)
-                num_to_minus += 1
 
             # 이벤트명에 '외'가 포함될 경우 이벤트 참여자 + 인원수 만큼 셈
             # if '외' in person_list_str:
@@ -136,11 +141,11 @@ def get_meal_cnt(creds):
             #     num_to_minus += (1 + number_headcount)
             #     continue
 
-    result = TOTAL_COMM_HEADCOUNT - num_to_minus
+    result = len(meal_cnt_list)
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
 
-    print(f'[{today}] 연구소 식사 인원: {result} 명 -> 제외: {num_to_minus}{meal_exclude_list} / 전체 {TOTAL_COMM_HEADCOUNT}')
+    print(f'[{today}] 연구소 식사 인원 || 포함: {result}{meal_cnt_list}, 제외: {result}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
 
     return result
 
