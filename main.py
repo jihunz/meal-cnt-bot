@@ -18,7 +18,6 @@ from googleapiclient.discovery import build
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
 DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영', '배건길']
-meal_exclude_list = []
 
 # 설정 파일 로드
 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -89,6 +88,7 @@ def send_email(result, creds):
 
 
 def get_meal_cnt(creds):
+    meal_exclude_list = []
     meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
     default_meal_cnt = len(meal_cnt_list)
 
