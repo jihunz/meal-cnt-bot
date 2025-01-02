@@ -17,7 +17,7 @@ from googleapiclient.discovery import build
 
 # 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
-DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영']
+DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영', '배건길']
 meal_exclude_list = []
 
 # 설정 파일 로드
@@ -89,7 +89,7 @@ def send_email(result, creds):
 
 
 def get_meal_cnt(creds):
-    meal_cnt_list = ['장지훈', '김태준', '배건길', '서대원', '조주형', '김형진']
+    meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
     default_meal_cnt = len(meal_cnt_list)
 
     # API 서비스 생성
@@ -144,7 +144,7 @@ def get_meal_cnt(creds):
     if result < 0:
         result = 0  # 인원이 음수가 되지 않도록 조정
 
-    print(f'[{today}] 연구소 식사 인원 || 포함: {result}{meal_cnt_list}, 제외: {len(meal_exclude_list)}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
+    print(f'[{today}] 연구소 식사 인원 - 포함: {result}{meal_cnt_list}, 제외: {len(meal_exclude_list)}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
 
     return result
 
@@ -157,7 +157,7 @@ def job():
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=00)
+    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=10)
     print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
     try:
         scheduler.start()
