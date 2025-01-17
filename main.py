@@ -7,157 +7,167 @@ import os
 from email.mime.text import MIMEText
 
 import pytz
+import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
-from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# 설정 파일 경로
 CONFIG_FILE = 'config/config.json'
-DEFAULT_EXCLUDE_LIST = ['김인경', '윤현석', '권두진', '김태훈', '한혜영', '배건길']
-
-# 설정 파일 로드
-with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-    config = json.load(f)
 
 
-def get_credentials():
-    creds = None
-    token_path = 'config/token.json'
-    # 기존에 저장된 토큰이 있으면 로드
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, config['SCOPES'])
-    # 유효한 자격 증명이 없으면 로그인 흐름 시작
-    if not creds or not creds.valid:
+class Meal_count_bot:
+    def __init__(self, config_file=CONFIG_FILE):
+        self.config_file = config_file
+        with open(self.config_file, 'r', encoding='utf-8') as f:
+            self.config = json.load(f)
+        self.creds = None
+        self.meal_exclude_list = []
+        self.default_exclude_list = ['김인경', '윤현석', '한혜영', '배건길']
+        self.meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
+        self.default_meal_cnt = len(self.meal_cnt_list)
+        self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
+
+    def get_credentials(self):
+        token_path = 'config/token.json'
+        creds = None
+        if os.path.exists(token_path):
+            creds = Credentials.from_authorized_user_file(token_path, self.config['SCOPES'])
+        if not creds or not creds.valid:
+            try:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    raise RefreshError
+            except RefreshError:
+                if os.path.exists(token_path):
+                    os.remove(token_path)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    self.config['OAUTH_CRED'],
+                    self.config['SCOPES']
+                )
+                creds = flow.run_local_server(port=0)
+                with open(token_path, 'w') as token:
+                    token.write(creds.to_json())
+        self.creds = creds
+        return self.creds
+
+    def send_email(self, result):
+        gmail_service = build('gmail', 'v1', credentials=self.creds)
+        to = 'hehan@vetec.co.kr'
+        sender = 'jhjang@vetec.co.kr'
+        formatted_today = self.now.strftime('%Y-%m-%d')
+        subject = f'[{formatted_today}] 연구소 식사 인원: {result} 명'
+        message_text = ''
+        message = MIMEText(message_text)
+        message['to'] = to
+        message['from'] = sender
+        message['subject'] = subject
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         try:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                raise RefreshError
-        except RefreshError:
-            # 기존의 잘못된 토큰 삭제
-            if os.path.exists(token_path):
-                os.remove(token_path)
-            # 재인증 수행
-            cred_ = json.dumps(config['OAUTH_CRED'])
-            flow = InstalledAppFlow.from_client_secrets_file(
-                config['OAUTH_CRED'], config['SCOPES'])
-            creds = flow.run_local_server(port=0)
-            # 자격 증명 저장
-            with open(token_path, 'w') as token:
-                token.write(creds.to_json())
-    return creds
+            gmail_service.users().messages().send(
+                userId='me',
+                body={'raw': raw_message}
+            ).execute()
+            print(f'[{self.now}] 이메일이 성공적으로 전송되었습니다 -> To: {to}')
+        except Exception as e:
+            print(f'[{self.now}] 이메일 전송 중 오류가 발생했습니다: {e}')
 
-
-def get_credentials_v2():
-    credentials = service_account.Credentials.from_service_account_file(
-        'config/service_account_key.json',
-        scopes=config['SCOPES']
-    )
-
-    # 도메인 전체 권한 위임을 위해 사용자 설정
-    cred = credentials.with_subject('jhjang@vetec.co.kr')
-    return cred
-
-
-def send_email(result, creds):
-    gmail_service = build('gmail', 'v1', credentials=creds)
-
-    to = 'hehan@vetec.co.kr'
-    sender = 'jhjang@vetec.co.kr'
-    tz = pytz.timezone('Asia/Seoul')
-    today = datetime.datetime.now(tz)
-    formatted_today = today.strftime('%Y-%m-%d')
-    subject = f'[{formatted_today}] 연구소 식사 인원: {result} 명'
-    message_text = ''
-
-    message = MIMEText(message_text)
-    message['to'] = to
-    message['from'] = sender
-    message['subject'] = subject
-    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-
-    try:
-        gmail_service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
-        print(f'[{today}] 이메일이 성공적으로 전송되었습니다 -> To: {to}')
-    except Exception as e:
-        print(f'[{today}] 이메일 전송 중 오류가 발생했습니다: {e}')
-
-
-def get_meal_cnt(creds):
-    meal_exclude_list = []
-    meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
-    default_meal_cnt = len(meal_cnt_list)
-
-    # API 서비스 생성
-    service = build('calendar', 'v3', credentials=creds)
-
-    # 오늘의 시작과 끝 시간 설정
-    tz = pytz.timezone('Asia/Seoul')
-    today = datetime.datetime.now(tz)
-    today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + datetime.timedelta(days=1)
-
-    # ISO 포맷으로 변환
-    time_min = today_start.isoformat()
-    time_max = today_end.isoformat()
-
-    # 이벤트 호출
-    for cal in config['CAL_ID_LIST']:
-        events_result = service.events().list(calendarId=cal, timeMin=time_min,
-                                              timeMax=time_max, singleEvents=True,
-                                              orderBy='startTime').execute()
-        event_list = events_result.get('items', [])
-        if not event_list:
-            print(f'[{today}] 이벤트가 없습니다.')
-
-        for event in event_list:
-            # 시간이 특정된 이벤트는 온라인 회의로 가정하여 건너뜀
-            if 'dateTime' in event['start']:
+    def get_meal_cnt(self):
+        default_meal_cnt = len(self.meal_cnt_list)
+        self.validate_holiday()
+        self.validate_monthly_meeting()
+        for cal in self.config['CAL_ID_LIST']:
+            event_list = self.get_event_list(cal)
+            if not event_list:
+                print(f'[{self.now}] {cal}에 해당 이벤트가 없습니다.')
                 continue
-
-            person_list = [name.strip() for name in event['summary'].split('-')[0].split(',')]
-
-            for name in person_list:
-                # 이벤트 참여자 이름이 제외할 리스트, 식사 인원 제외 리스트에 속해 있거나 참여자 이름이 연구소 식사 인원 목록에 포함되어 있지 않으면 제외
-                if name in DEFAULT_EXCLUDE_LIST:
+            for event in event_list:
+                if 'dateTime' in event['start']:
                     continue
-                if name in meal_exclude_list:
-                    continue
-                if name not in meal_cnt_list:
-                    continue
+                person_list = [name.strip() for name in event['summary'].split('-')[0].split(',')]
+                for name in person_list:
+                    if name in self.meal_exclude_list:
+                        continue
+                    if name not in self.meal_cnt_list:
+                        continue
+                    self.meal_cnt_list.remove(name)
+                    self.meal_exclude_list.append(name)
+        result = len(self.meal_cnt_list)
+        if result < 0:
+            result = 0
+        now_kst = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
+        print(f'[{now_kst}] 연구소 식사 인원 - 포함: {result}{self.meal_cnt_list}, 제외: {len(self.meal_exclude_list)}{self.meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
+        return result
 
-                # 아니라면 식사 인원 리스트에서 이벤트 참여자 삭제
-                meal_cnt_list.remove(name)
-                meal_exclude_list.append(name)
+    def validate_holiday(self):
+        result = False
+        today_info = None
+        formatted_now = self.now.strftime("%Y%m%d")
+        curr_year = self.now.strftime("%Y")
+        curr_month = self.now.strftime("%m")
+        url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo'
+        params = {
+            'serviceKey': 'o9Nl5P8j/q+4yxmDuPD/lUHILUtj804RYh/jJl0KZofUB9mSV/fWhLL1kXyTht+ylHs+cAv/77S7g4kweuVp5A==',
+            'pageNo': '1',
+            'numOfRows': '100',
+            'solYear': curr_year,
+            'solMonth': curr_month,
+            '_type': 'json'
+        }
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json().get('response', {}).get('body', {}).get('items', {}).get('item', [])
+            if isinstance(data, dict):
+                data = [data]
+            for holiday in data:
+                if (formatted_now == str(holiday['locdate'])) and (holiday['isHoliday'] == 'Y'):
+                    print(holiday)
+                    result = True
+                    today_info = holiday
+        print(f'[{self.now}] 오늘 공휴일 여부: {result}, {today_info}')
+        return result
 
-            # 이벤트명에 '외'가 포함될 경우 이벤트 참여자 + 인원수 만큼 셈
-            # if '외' in person_list_str:
-            #     number_headcount = int(''.join(re.findall(r'\d+', person_list_str)))
-            #     num_to_minus += (1 + number_headcount)
-            #     continue
+    def validate_monthly_meeting(self):
+        events = self.get_event_list(self.config['BUSINESS_CAL_ID'])
+        for event_item in events:
+            if '월간회의' in event_item['summary']:
+                self.meal_cnt_list.extend(self.default_exclude_list)
+                self.default_exclude_list.clear()
+                break
+        self.default_meal_cnt = len(self.meal_cnt_list)
 
-    result = len(meal_cnt_list)
-    if result < 0:
-        result = 0  # 인원이 음수가 되지 않도록 조정
+    def get_event_list(self, cal_id):
+        service = build('calendar', 'v3', credentials=self.creds)
+        start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + datetime.timedelta(days=1)
+        time_min = start.isoformat()
+        time_max = end.isoformat()
+        events_result = service.events().list(
+            calendarId=cal_id,
+            timeMin=time_min,
+            timeMax=time_max,
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        return events_result.get('items', [])
 
-    print(f'[{today}] 연구소 식사 인원 - 포함: {result}{meal_cnt_list}, 제외: {len(meal_exclude_list)}{meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
+    def job(self):
+        self.get_credentials()
+        meal_cnt = self.get_meal_cnt()
+        self.send_email(meal_cnt)
 
-    return result
 
-
-def job():
-    creds = get_credentials()
-    meal_cnt = get_meal_cnt(creds)
-    send_email(meal_cnt, creds)
+def create_bot_and_job():
+    bot = Meal_count_bot()
+    bot.job()
 
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler(timezone='Asia/Seoul')
-    scheduler.add_job(job, 'cron', day_of_week='mon-fri', hour=9, minute=10)
+    scheduler.add_job(create_bot_and_job, 'cron', day_of_week='mon-fri', hour=9, minute=10)
     print('[ meal_cnt_bot 스케줄러가 시작되었습니다 ]')
     try:
         scheduler.start()
