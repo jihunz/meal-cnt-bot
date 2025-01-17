@@ -77,8 +77,7 @@ class Meal_count_bot:
 
     def get_meal_cnt(self):
         default_meal_cnt = len(self.meal_cnt_list)
-        self.validate_holiday()
-        self.validate_monthly_meeting()
+
         for cal in self.config['CAL_ID_LIST']:
             event_list = self.get_event_list(cal)
             if not event_list:
@@ -102,9 +101,17 @@ class Meal_count_bot:
         print(f'[{now_kst}] 연구소 식사 인원 - 포함: {result}{self.meal_cnt_list}, 제외: {len(self.meal_exclude_list)}{self.meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
         return result
 
+    # 토, 일요일 및 공휴일 판별
     def validate_holiday(self):
         result = False
         today_info = None
+
+        weekday = self.now.weekday()
+        if weekday == 5 or weekday == 6:
+            result = True
+            print(f'[{self.now}] 오늘 공휴일 여부: {result}, {'월화수목금토일'[weekday] + '요일'}')
+            return result
+
         formatted_now = self.now.strftime("%Y%m%d")
         curr_year = self.now.strftime("%Y")
         curr_month = self.now.strftime("%m")
@@ -124,7 +131,6 @@ class Meal_count_bot:
                 data = [data]
             for holiday in data:
                 if (formatted_now == str(holiday['locdate'])) and (holiday['isHoliday'] == 'Y'):
-                    print(holiday)
                     result = True
                     today_info = holiday
         print(f'[{self.now}] 오늘 공휴일 여부: {result}, {today_info}')
@@ -156,6 +162,9 @@ class Meal_count_bot:
 
     def job(self):
         self.get_credentials()
+        if self.validate_holiday():
+            return
+        self.validate_monthly_meeting()
         meal_cnt = self.get_meal_cnt()
         self.send_email(meal_cnt)
 
