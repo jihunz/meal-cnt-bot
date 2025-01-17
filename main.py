@@ -28,7 +28,7 @@ class Meal_count_bot:
         self.default_exclude_list = ['김인경', '윤현석', '한혜영', '배건길']
         self.meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
         self.default_meal_cnt = len(self.meal_cnt_list)
-        self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
+        self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul')) - datetime.timedelta(days=4)
 
     def get_credentials(self):
         token_path = 'config/token.json'
@@ -80,12 +80,15 @@ class Meal_count_bot:
 
         for cal in self.config['CAL_ID_LIST']:
             event_list = self.get_event_list(cal)
+
             if not event_list:
                 print(f'[{self.now}] {cal}에 해당 이벤트가 없습니다.')
                 continue
+
             for event in event_list:
                 if 'dateTime' in event['start']:
                     continue
+
                 person_list = [name.strip() for name in event['summary'].split('-')[0].split(',')]
                 for name in person_list:
                     if name in self.meal_exclude_list:
@@ -94,12 +97,21 @@ class Meal_count_bot:
                         continue
                     self.meal_cnt_list.remove(name)
                     self.meal_exclude_list.append(name)
+
         result = len(self.meal_cnt_list)
         if result < 0:
             result = 0
         now_kst = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
-        print(f'[{now_kst}] 연구소 식사 인원 - 포함: {result}{self.meal_cnt_list}, 제외: {len(self.meal_exclude_list)}{self.meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
+        print(
+            f'[{now_kst}] 연구소 식사 인원 - 포함: {result}{self.meal_cnt_list}, 제외: {len(self.meal_exclude_list)}{self.meal_exclude_list}, 기본 인원수: {default_meal_cnt}')
         return result
+
+    def validate_etc(self):
+        for event in self.get_event_list(self.config['BUSINESS_CAL_ID']):
+            if '워크샵' in event['summary']:
+                print(f'[{self.now}] {event['summary']}')
+                return True
+        return False
 
     # 토, 일요일 및 공휴일 판별
     def validate_holiday(self):
@@ -162,7 +174,7 @@ class Meal_count_bot:
 
     def job(self):
         self.get_credentials()
-        if self.validate_holiday():
+        if self.validate_holiday() or self.validate_etc():
             return
         self.validate_monthly_meeting()
         meal_cnt = self.get_meal_cnt()
