@@ -28,7 +28,7 @@ class Meal_count_bot:
         self.default_exclude_list = ['김인경', '윤현석', '한혜영', '배건길']
         self.meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
         self.default_meal_cnt = len(self.meal_cnt_list)
-        self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul')) - datetime.timedelta(days=4)
+        self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
 
     def get_credentials(self):
         token_path = 'config/token.json'
