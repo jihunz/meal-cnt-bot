@@ -113,20 +113,25 @@ class Meal_count_bot:
                 return True
         return False
 
+    def print_and_return(self, result, today_info):
+        print(f'[{self.now}] 오늘 공휴일 여부: {result}, {today_info}')
+        return result
+
     # 토, 일요일 및 공휴일 판별
     def validate_holiday(self):
         result = False
         today_info = None
 
         weekday = self.now.weekday()
-        if weekday == 5 or weekday == 6:
+        if weekday in (5, 6):
+            # 토요일(5) 혹은 일요일(6)인 경우
             result = True
-            print(f'[{self.now}] 오늘 공휴일 여부: {result}, {'월화수목금토일'[weekday] + '요일'}')
-            return result
+            return self.print_and_return(result, '주말')
 
         formatted_now = self.now.strftime("%Y%m%d")
         curr_year = self.now.strftime("%Y")
         curr_month = self.now.strftime("%m")
+
         url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo'
         params = {
             'serviceKey': 'o9Nl5P8j/q+4yxmDuPD/lUHILUtj804RYh/jJl0KZofUB9mSV/fWhLL1kXyTht+ylHs+cAv/77S7g4kweuVp5A==',
@@ -136,17 +141,26 @@ class Meal_count_bot:
             'solMonth': curr_month,
             '_type': 'json'
         }
+
         response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json().get('response', {}).get('body', {}).get('items', {}).get('item', [])
-            if isinstance(data, dict):
-                data = [data]
-            for holiday in data:
-                if (formatted_now == str(holiday['locdate'])) and (holiday['isHoliday'] == 'Y'):
-                    result = True
-                    today_info = holiday
-        print(f'[{self.now}] 오늘 공휴일 여부: {result}, {today_info}')
-        return result
+        if response.status_code != 200:
+            return self.print_and_return(result, today_info)
+
+        res = response.json()
+        if len(res['response']['body']['items']) < 1:
+            return self.print_and_return(result, today_info)
+
+        data = res['response']['body']['items']['item']
+        if isinstance(data, dict):
+            data = [data]
+
+        for holiday in data:
+            if (formatted_now == str(holiday['locdate'])) and (holiday['isHoliday'] == 'Y'):
+                result = True
+                today_info = holiday
+                break
+
+        return self.print_and_return(result, today_info)
 
     def validate_monthly_meeting(self):
         events = self.get_event_list(self.config['BUSINESS_CAL_ID'])
