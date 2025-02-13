@@ -79,7 +79,7 @@ class Meal_count_bot:
         default_meal_cnt = len(self.meal_cnt_list)
 
         for cal in self.config['CAL_ID_LIST']:
-            event_list = self.get_event_list(cal)
+            event_list = self.get_event_list(cal, 1)
 
             if not event_list:
                 print(f'[{self.now}] {cal}에 해당 이벤트가 없습니다.')
@@ -107,7 +107,7 @@ class Meal_count_bot:
         return result
 
     def validate_etc(self):
-        for event in self.get_event_list(self.config['BUSINESS_CAL_ID']):
+        for event in self.get_event_list(self.config['BUSINESS_CAL_ID'], 1):
             if '워크샵' in event['summary']:
                 print(f'[{self.now}] {event['summary']}')
                 return True
@@ -162,25 +162,23 @@ class Meal_count_bot:
 
         return self.print_and_return(result, today_info)
 
+    # 월간회의(금), 월간회의 전날(목) 모두 식사 인원 목록 증가시킴
     def validate_monthly_meeting(self):
-        events = self.get_event_list(self.config['BUSINESS_CAL_ID'])
+        events = self.get_event_list(self.config['BUSINESS_CAL_ID'], 2)
         for event_item in events:
             if '월간회의' in event_item['summary']:
                 self.meal_cnt_list.extend(self.default_exclude_list)
-                self.default_exclude_list.clear()
                 break
         self.default_meal_cnt = len(self.meal_cnt_list)
 
-    def get_event_list(self, cal_id):
+    def get_event_list(self, cal_id, days):
         service = build('calendar', 'v3', credentials=self.creds)
         start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
-        end = start + datetime.timedelta(days=1)
-        time_min = start.isoformat()
-        time_max = end.isoformat()
+        end = start + datetime.timedelta(days=days)
         events_result = service.events().list(
             calendarId=cal_id,
-            timeMin=time_min,
-            timeMax=time_max,
+            timeMin=start.isoformat(),
+            timeMax=end.isoformat(),
             singleEvents=True,
             orderBy='startTime'
         ).execute()
