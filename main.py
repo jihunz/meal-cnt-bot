@@ -26,7 +26,7 @@ class Meal_count_bot:
         self.creds = None
         self.meal_exclude_list = []
         self.default_exclude_list = ['김인경', '윤현석', '한혜영', '배건길']
-        self.meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진']
+        self.meal_cnt_list = ['장지훈', '김태준', '서대원', '조주형', '김형진', '김대현']
         self.default_meal_cnt = len(self.meal_cnt_list)
         self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
 
