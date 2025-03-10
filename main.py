@@ -146,7 +146,11 @@ class Meal_count_bot:
         if response.status_code != 200:
             return self.print_and_return(result, today_info)
 
-        res = response.json()
+        try:
+            res = response.json()
+        except Exception as e:
+            return self.print_and_return(result, e)
+
         if len(res['response']['body']['items']) < 1:
             return self.print_and_return(result, today_info)
 
