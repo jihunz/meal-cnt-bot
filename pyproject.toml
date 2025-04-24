@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "meal_cnt_bot"
+version = "1.0.0"
+description = "식사 인원을 자동으로 계산하고 이메일로 전송하는 봇"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [
+    { include = "*.py" },
+    { include = "models" },
+    { include = "routers" },
+    { include = "schemas" },
+    { include = "services" },
+    { include = "utils" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.0"
+uvicorn = "^0.29.0"
+pydantic = "^2.7.1"
+google-api-python-client = "^2.154.0"
+google-auth-oauthlib = "^1.2.1"
+google-auth-httplib2 = "^0.2.0"
+requests = "^2.32.3"
+apscheduler = "^3.11.0"
+pytz = "^2024.2"
+python-dateutil = "^2.9.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+flake8 = "^7.0.0"
+black = "^24.0.0"
+isort = "^5.12.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.poetry.scripts]
+start = "uvicorn main:app --host 0.0.0.0 --port 8000"
+dev = "uvicorn main:app --host 0.0.0.0 --port 8000 --reload" 

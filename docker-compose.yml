@@ -9,5 +9,8 @@ services:
       - ./config:/app/config
     environment:
       - TZ=Asia/Seoul
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
     restart: always
 
