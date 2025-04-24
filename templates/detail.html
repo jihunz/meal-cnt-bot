@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VETEC 연구소 식사 인원 관리 - 예약 관리</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="nav">
+                <a href="/" style="text-decoration: none;">
+                    <h1>VETEC 연구소 식사 인원 관리</h1>
+                </a>
+                <div class="nav-links">
+                    <a href="/">식사 인원 예약</a>
+                    <a href="/detail">예약 관리</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 class="page-title">식사 인원 예약 관리</h2>
+        
+        <div class="card">
+            <div class="form-group">
+                <label for="month">년/월 선택</label>
+                <input type="month" id="month" class="form-control">
+            </div>
+            
+            <div id="calendar-container">
+                <!-- 달력이 여기에 표시됩니다 -->
+            </div>
+        </div>
+        
+        <div id="alert" class="alert" style="display: none;"></div>
+    </main>
+    
+    <!-- 우클릭 컨텍스트 메뉴 -->
+    <div id="context-menu" class="context-menu">
+        <ul>
+            <li id="edit-option">수정</li>
+            <li id="delete-option">삭제</li>
+        </ul>
+    </div>
+    
+    <!-- 수정 모달 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">식사 인원 수정</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <div class="form-group">
+                        <label for="edit-date">날짜</label>
+                        <input type="date" id="edit-date" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-count">식사 인원</label>
+                        <input type="number" id="edit-count" class="form-control" min="1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-edit" class="btn btn-primary">취소</button>
+                <button id="save-edit" class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthInput = document.getElementById('month');
+            const calendarContainer = document.getElementById('calendar-container');
+            const contextMenu = document.getElementById('context-menu');
+            const editModal = document.getElementById('edit-modal');
+            const editForm = document.getElementById('edit-form');
+            const editDateInput = document.getElementById('edit-date');
+            const editCountInput = document.getElementById('edit-count');
+            const alert = document.getElementById('alert');
+            
+            let selectedDate = null;
+            let mealCountData = {};
+            
+            // 현재 년/월로 초기화
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            monthInput.value = `${year}-${month}`;
+            
+            // 초기 달력 렌더링
+            renderCalendar(year, parseInt(month));
+            
+            // 년/월 변경 이벤트
+            monthInput.addEventListener('change', function() {
+                const [year, month] = this.value.split('-');
+                renderCalendar(parseInt(year), parseInt(month));
+            });
+            
+            // 달력 렌더링 함수
+            async function renderCalendar(year, month) {
+                // 식사 인원 데이터 불러오기
+                await fetchMealCountData();
+                
+                const firstDay = new Date(year, month - 1, 1);
+                const lastDay = new Date(year, month, 0);
+                const daysInMonth = lastDay.getDate();
+                const startDayOfWeek = firstDay.getDay();
+                
+                // 달력 헤더 생성
+                let calendarHTML = `
+                    <table class="calendar">
+                        <thead>
+                            <tr>
+                                <th>일</th>
+                                <th>월</th>
+                                <th>화</th>
+                                <th>수</th>
+                                <th>목</th>
+                                <th>금</th>
+                                <th>토</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                // 달력 바디 생성
+                let day = 1;
+                for (let i = 0; i < 6; i++) {
+                    calendarHTML += '<tr>';
+                    
+                    for (let j = 0; j < 7; j++) {
+                        if ((i === 0 && j < startDayOfWeek) || day > daysInMonth) {
+                            calendarHTML += '<td></td>';
+                        } else {
+                            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const mealCount = mealCountData[dateStr];
+                            
+                            calendarHTML += `<td class="calendar-day" data-date="${dateStr}">
+                                <div>${day}</div>`;
+                            
+                            if (mealCount !== undefined) {
+                                calendarHTML += `<div class="meal-count" data-date="${dateStr}">${mealCount}명</div>`;
+                            }
+                            
+                            calendarHTML += '</td>';
+                            day++;
+                        }
+                    }
+                    
+                    calendarHTML += '</tr>';
+                    if (day > daysInMonth) break;
+                }
+                
+                calendarHTML += '</tbody></table>';
+                calendarContainer.innerHTML = calendarHTML;
+                
+                // 일정 수정 클릭 이벤트
+                document.querySelectorAll('.meal-count').forEach(element => {
+                    element.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const date = this.dataset.date;
+                        const count = mealCountData[date];
+                        
+                        openEditModal(date, count);
+                    });
+                });
+                
+                // 우클릭 이벤트 (컨텍스트 메뉴)
+                document.querySelectorAll('.calendar-day').forEach(day => {
+                    day.addEventListener('contextmenu', function(e) {
+                        const date = this.dataset.date;
+                        if (date && mealCountData[date] !== undefined) {
+                            e.preventDefault();
+                            selectedDate = date;
+                            
+                            // 컨텍스트 메뉴 위치 설정
+                            contextMenu.style.display = 'block';
+                            contextMenu.style.left = `${e.pageX}px`;
+                            contextMenu.style.top = `${e.pageY}px`;
+                        }
+                    });
+                });
+            }
+            
+            // 데이터 불러오기
+            async function fetchMealCountData() {
+                try {
+                    const response = await fetch('/api/meal-count/all');
+                    mealCountData = await response.json();
+                } catch (error) {
+                    console.error('Error fetching meal count data:', error);
+                    showAlert('danger', '데이터를 불러오는 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 수정 모달 열기
+            function openEditModal(date, count) {
+                selectedDate = date;
+                editDateInput.value = date;
+                editCountInput.value = count;
+                editModal.style.display = 'flex';
+            }
+            
+            // 컨텍스트 메뉴 옵션 이벤트
+            document.getElementById('edit-option').addEventListener('click', function() {
+                contextMenu.style.display = 'none';
+                openEditModal(selectedDate, mealCountData[selectedDate]);
+            });
+            
+            document.getElementById('delete-option').addEventListener('click', async function() {
+                contextMenu.style.display = 'none';
+                
+                if (confirm(`${selectedDate} 날짜의 식사 인원 정보를 삭제하시겠습니까?`)) {
+                    await deleteMealCount(selectedDate);
+                }
+            });
+            
+            // 삭제 기능
+            async function deleteMealCount(date) {
+                try {
+                    const response = await fetch(`/api/meal-count/${date}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAlert('success', data.message);
+                        // 달력 다시 렌더링
+                        const [year, month] = monthInput.value.split('-');
+                        renderCalendar(parseInt(year), parseInt(month));
+                    } else {
+                        showAlert('danger', data.detail || '오류가 발생했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('danger', '서버 통신 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 수정 모달 관련 이벤트
+            document.querySelector('.close-modal').addEventListener('click', function() {
+                editModal.style.display = 'none';
+            });
+            
+            document.getElementById('cancel-edit').addEventListener('click', function() {
+                editModal.style.display = 'none';
+            });
+            
+            document.getElementById('save-edit').addEventListener('click', async function() {
+                const date = editDateInput.value;
+                const count = parseInt(editCountInput.value);
+                
+                if (!count || count < 1) {
+                    showAlert('danger', '유효한 인원 수를 입력해주세요.');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/meal-count/${date}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            date: date,
+                            count: count
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        editModal.style.display = 'none';
+                        showAlert('success', data.message);
+                        
+                        // 달력 다시 렌더링
+                        const [year, month] = monthInput.value.split('-');
+                        renderCalendar(parseInt(year), parseInt(month));
+                    } else {
+                        showAlert('danger', data.detail || '오류가 발생했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('danger', '서버 통신 중 오류가 발생했습니다.');
+                }
+            });
+            
+            // 컨텍스트 메뉴 닫기 (다른 곳 클릭 시)
+            document.addEventListener('click', function() {
+                contextMenu.style.display = 'none';
+            });
+            
+            // 알림 표시 함수
+            function showAlert(type, message) {
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                alert.style.display = 'block';
+                
+                // 5초 후 알림 숨기기
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html> 

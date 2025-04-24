@@ -1,0 +1,358 @@
+:root {
+  --primary-color: #4a6fa5;
+  --secondary-color: #166088;
+  --accent-color: #4fc3a1;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --danger-color: #dc3545;
+  --success-color: #28a745;
+  --today-bg-color: rgba(135, 206, 250, 0.25);
+  --sunday-bg-color: rgba(255, 200, 200, 0.3);
+  --saturday-bg-color: rgba(255, 248, 180, 0.3);
+  --font-family: 'Noto Sans KR', 'Roboto', sans-serif;
+  --shadow: 0 8px 16px rgba(0,0,0,0.1);
+  --border-radius: 16px;
+  --card-border-radius: 20px;
+  --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4efe9 100%);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  line-height: 1.6;
+  color: var(--dark-color);
+  background: var(--background-gradient);
+  min-height: 100vh;
+  padding-top: 2rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 2rem;
+  padding-left: 1rem;
+}
+
+.card {
+  background-color: white;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+}
+
+.card h2 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--dark-color);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  transition: all 0.3s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.9rem 1.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #bd2130;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.calendar {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  margin-top: 1rem;
+  table-layout: fixed;
+}
+
+.calendar th, .calendar td {
+  padding: 12px;
+  text-align: center;
+  border: none;
+  width: calc(100% / 7);
+}
+
+.calendar th {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.calendar-day {
+  min-height: 80px;
+  position: relative;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  transition: background-color 0.3s;
+}
+
+.calendar-day.today {
+  background-color: var(--today-bg-color) !important;
+  box-shadow: 0 0 0 2px var(--primary-color) inset;
+}
+
+.calendar-day:hover {
+  background-color: rgba(74, 111, 165, 0.1);
+}
+
+.meal-count {
+  padding: 6px 12px;
+  background-color: var(--accent-color);
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 5px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.meal-count:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+
+.context-menu {
+  position: absolute;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  display: none;
+  overflow: hidden;
+}
+
+.context-menu ul {
+  list-style: none;
+}
+
+.context-menu li {
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.context-menu li:hover {
+  background-color: rgba(74, 111, 165, 0.1);
+  color: var(--primary-color);
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: var(--card-border-radius);
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #aaa;
+  transition: color 0.3s;
+}
+
+.close-modal:hover {
+  color: var(--primary-color);
+}
+
+.modal-footer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.alert {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid transparent;
+}
+
+.alert-success {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-left-color: var(--success-color);
+  color: var(--success-color);
+}
+
+.alert-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-left-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+/* 2-column layout */
+.content-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.left-column {
+  flex: 1;
+  min-width: 300px;
+}
+
+.right-column {
+  flex: 2;
+  min-width: 600px;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+  .content-container {
+    flex-direction: column;
+  }
+  
+  .left-column, .right-column {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .card {
+    padding: 1.5rem;
+  }
+  
+  .btn {
+    padding: 0.8rem 1.5rem;
+  }
+  
+  .calendar th, .calendar td {
+    padding: 8px;
+  }
+  
+  .calendar-day {
+    min-height: 60px;
+  }
+
+  .app-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* 요일별 스타일 */
+.calendar th:first-child {
+  background-color: var(--danger-color);
+}
+
+.calendar td:first-child .calendar-day {
+  background-color: var(--sunday-bg-color);
+}
+
+.calendar th:last-child {
+  background-color: #f0ad4e; /* 토요일 헤더 */
+}
+
+.calendar td:last-child .calendar-day {
+  background-color: var(--saturday-bg-color);
+} 

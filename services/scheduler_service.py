@@ -24,8 +24,8 @@ class SchedulerService:
             self.run_meal_count_job,
             'cron',
             day_of_week='mon-fri',
-            hour=9,
-            minute=10
+            hour=12,
+            minute=18
         )
 
         self.scheduler.start()

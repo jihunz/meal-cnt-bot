@@ -3,14 +3,16 @@ import uvicorn
 from fastapi import FastAPI, Request, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-from routers import scheduler_router
+from routers import scheduler_router, meal_count_router
 from services.meal_count_service import MealCountService
 from schemas.meal_count import MealCountResult
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
-    title="식사 인원 봇 API",
+    title="VETEC 연구소 식사 인원 관리",
     description="Google Calendar를 사용하여 식사 인원을 자동으로 계산하고 이메일로 전송하는 API",
     version="1.0.0"
 )
@@ -26,16 +28,21 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(scheduler_router.router)
+app.include_router(meal_count_router.router)
 
+# 정적 파일 및 템플릿 설정
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
-async def root():
-    """루트 엔드포인트"""
-    return {
-        "message": "식사 인원 봇 API에 오신 것을 환영합니다",
-        "documentation": "/docs"
-    }
+async def root(request: Request):
+    """통합 메인 페이지"""
+    return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/detail")
+async def detail(request: Request):
+    """상세 페이지 (레거시 지원)"""
+    return templates.TemplateResponse("detail.html", {"request": request})
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

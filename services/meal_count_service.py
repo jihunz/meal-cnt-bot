@@ -1,5 +1,7 @@
 import datetime
 import pytz
+import json
+from pathlib import Path
 from models.meal_count import MealCountModel
 from services.event_service import EventService
 from services.email_service import EmailService
@@ -18,14 +20,46 @@ class MealCountService:
         self.email_service = EmailService(self.credentials)
         self.meal_count_model = MealCountModel(config_file)
         self.now = datetime.datetime.now(pytz.timezone('Asia/Seoul'))
+        self.data_file = Path("data/meal_counts.json")
     
     def should_skip_meal_count(self):
         """식사 인원 계산을 건너뛰어야 하는지 확인"""
         # EventService의 통합 메소드 사용
         return self.event_service.should_skip_meal_count()
     
+    def get_saved_meal_count(self):
+        """저장된 식사 인원 정보 확인"""
+        if not self.data_file.exists():
+            return None
+        
+        try:
+            with open(self.data_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                today = self.now.strftime("%Y-%m-%d")
+                
+                if today in data:
+                    print(f"[{self.now}] 저장된 식사 인원 정보를 사용합니다: {data[today]}명")
+                    return data[today]
+                
+                return None
+        except Exception as e:
+            print(f"[{self.now}] 저장된 식사 인원 정보를 불러오는 중 오류가 발생했습니다: {str(e)}")
+            return None
+    
     def process_meal_count(self):
         """식사 인원 계산 및 처리"""
+        # 미리 저장된 식사 인원이 있는지 확인
+        saved_count = self.get_saved_meal_count()
+        if saved_count is not None:
+            # 저장된 식사 인원 정보가 있으면 그것을 사용
+            result = MealCountResult(
+                count=saved_count,
+                included_people=["수동 입력"],
+                excluded_people=["수동 입력"],
+                default_count=saved_count
+            )
+            return result
+        
         # 이미 계산을 건너뛰어야 하는지 확인
         if self.should_skip_meal_count():
             return None
