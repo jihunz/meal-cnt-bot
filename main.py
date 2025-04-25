@@ -2,15 +2,24 @@ import os
 import uvicorn
 import json
 from fastapi import FastAPI, Request, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
+from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 
 from routers import scheduler_router, meal_count_router
 from services.meal_count_service import MealCountService
 from schemas.meal_count import MealCountResult
+
+# HTTPS 대응을 위한 StaticFiles 클래스 확장
+class SPAStaticFiles(StarletteStaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        # mixed-content 방지를 위해 Content-Security-Policy 헤더 추가
+        response.headers.append("Content-Security-Policy", "upgrade-insecure-requests")
+        return response
 
 # 설정 파일 로드
 with open("config/config.json", "r") as f:
@@ -55,18 +64,22 @@ app.include_router(scheduler_router.router)
 app.include_router(meal_count_router.router)
 
 # 정적 파일 및 템플릿 설정
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", SPAStaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 async def root(request: Request):
     """통합 메인 페이지"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    response = templates.TemplateResponse("index.html", {"request": request})
+    response.headers["Content-Security-Policy"] = "upgrade-insecure-requests"
+    return response
 
 @app.get("/detail")
 async def detail(request: Request):
     """상세 페이지 (레거시 지원)"""
-    return templates.TemplateResponse("detail.html", {"request": request})
+    response = templates.TemplateResponse("detail.html", {"request": request})
+    response.headers["Content-Security-Policy"] = "upgrade-insecure-requests"
+    return response
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
