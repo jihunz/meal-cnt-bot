@@ -83,3 +83,31 @@ if __name__ == "__main__":
 
     print(f"🚀 식사 인원 봇 API 서버가 시작됩니다: http://{host}:{port}")
     uvicorn.run("main:app", host=host, port=port, reload=True)
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/")
+async def root(request: Request):
+    """통합 메인 페이지"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/detail")
+async def detail(request: Request):
+    """상세 페이지 (레거시 지원)"""
+    return templates.TemplateResponse("detail.html", {"request": request})
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """전역 예외 처리"""
+    return JSONResponse(
+        status_code=500,
+        content={"message": f"서버 오류가 발생했습니다: {str(exc)}"}
+    )
+
+if __name__ == "__main__":
+    # 실행 환경에 따라 호스트 결정
+    host = "0.0.0.0"
+    port = int(config["port"])
+
+    print(f"🚀 식사 인원 봇 API 서버가 시작됩니다: http://{host}:{port}")
+    uvicorn.run("main:app", host=host, port=port, reload=True)

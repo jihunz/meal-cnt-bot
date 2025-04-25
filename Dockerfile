@@ -28,7 +28,7 @@ COPY . .
 ENV DOCKER_ENV=1
 
 # 포트 노출
-EXPOSE 1200
+EXPOSE 6543
 
 # 컨테이너 시작 시 실행될 명령
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "1200"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "6543"]
