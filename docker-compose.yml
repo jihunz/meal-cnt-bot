@@ -11,6 +11,6 @@ services:
       - TZ=Asia/Seoul
       - PYTHONUNBUFFERED=1
     ports:
-      - "6543:6543"
+      - "1200:1200"
     restart: always
 

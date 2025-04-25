@@ -46,5 +46,5 @@ profile = "black"
 line_length = 88
 
 [tool.poetry.scripts]
-start = "uvicorn main:app --host 0.0.0.0 --port 6543"
-dev = "uvicorn main:app --host 0.0.0.0 --port 6543 --reload"
+start = "uvicorn main:app --host 0.0.0.0 --port 1200"
+dev = "uvicorn main:app --host 0.0.0.0 --port 1200 --reload"
