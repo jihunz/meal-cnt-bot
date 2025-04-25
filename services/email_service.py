@@ -9,8 +9,7 @@ class EmailService:
     """이메일 전송을 위한 서비스 클래스"""
 
     # 클래스 변수로 선언
-    # to = 'hehan@vetec.co.kr'
-    to = 'jhjang@vetec.co.kr'
+    to = 'hehan@vetec.co.kr'
     sender = 'jhjang@vetec.co.kr'
     subject_template = '[{date}] 연구소 식사 인원: {count} 명'
 

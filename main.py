@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from contextlib import asynccontextmanager
 
 from routers import scheduler_router, meal_count_router
 from services.meal_count_service import MealCountService
@@ -15,11 +16,29 @@ from schemas.meal_count import MealCountResult
 with open("config/config.json", "r") as f:
     config = json.load(f)
 
+def start_scheduler():
+    """애플리케이션 시작 시 스케줄러 시작"""
+    from services.scheduler_service import SchedulerService
+    scheduler = SchedulerService()
+    scheduler.start()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 라이프사이클 이벤트 관리"""
+    # 시작 시 실행
+    start_scheduler()
+    yield
+    # 종료 시 실행
+    from routers.scheduler_router import get_scheduler_service
+    scheduler = get_scheduler_service()
+    scheduler.stop()
+
 # FastAPI 애플리케이션 생성
 app = FastAPI(
     title="VETEC 연구소 식사 인원 관리",
     description="Google Calendar를 사용하여 식사 인원을 자동으로 계산하고 이메일로 전송하는 API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS 설정
@@ -56,32 +75,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"message": f"서버 오류가 발생했습니다: {str(exc)}"}
     )
-
-
-def start_scheduler():
-    """애플리케이션 시작 시 스케줄러 시작"""
-    from services.scheduler_service import SchedulerService
-    scheduler = SchedulerService()
-    scheduler.start()
-
-
-# 애플리케이션 시작 시 스케줄러 시작
-@app.on_event("startup")
-async def startup_event():
-    """애플리케이션 시작 이벤트"""
-    # 스케줄러 시작
-    start_scheduler()
-
-
-# 애플리케이션 종료 시 스케줄러 종료
-@app.on_event("shutdown")
-async def shutdown_event():
-    """애플리케이션 종료 이벤트"""
-    # 스케줄러 종료
-    from routers.scheduler_router import get_scheduler_service
-    scheduler = get_scheduler_service()
-    scheduler.stop()
-
 
 if __name__ == "__main__":
     # 실행 환경에 따라 호스트 결정
