@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VETEC 연구소 식사 인원 관리 - 예약 관리</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
     <style>
         .checkbox-container {
@@ -33,13 +34,22 @@
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            font-size: 1.2rem;
+            transition: all 0.2s;
         }
         .delete-selected:hover {
             background-color: #c82333;
+            transform: translateY(-2px);
         }
         .delete-selected:disabled {
             background-color: #6c757d;
             cursor: not-allowed;
+            transform: none;
         }
         .select-count {
             font-size: 14px;
@@ -73,7 +83,9 @@
             
             <div class="multi-action-bar">
                 <span class="select-count">0개 선택됨</span>
-                <button id="delete-selected" class="delete-selected" disabled>선택 삭제</button>
+                <button id="delete-selected" class="delete-selected" disabled title="선택 항목 삭제">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
             </div>
             
             <div id="calendar-container">
@@ -157,10 +169,7 @@
             // 선택 삭제 버튼 이벤트
             deleteSelectedBtn.addEventListener('click', async function() {
                 if (selectedDates.size === 0) return;
-                
-                if (confirm(`선택한 ${selectedDates.size}개의 식사 인원 정보를 삭제하시겠습니까?`)) {
-                    await deleteMultipleMealCounts(Array.from(selectedDates));
-                }
+                await deleteMultipleMealCounts(Array.from(selectedDates));
             });
             
             // 달력 렌더링 함수
@@ -202,19 +211,16 @@
                             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                             const mealCount = mealCountData[dateStr];
                             
-                            calendarHTML += `<td class="calendar-day" data-date="${dateStr}">
-                                <div>${day}</div>`;
+                            // 업데이트된 캘린더 셀 구조
+                            calendarHTML += `<td>
+                                <div class="calendar-day" data-date="${dateStr}">
+                                    <div>${day}</div>`;
                             
                             if (mealCount !== undefined) {
-                                calendarHTML += `
-                                <div class="meal-count" data-date="${dateStr}">${mealCount}명</div>
-                                <div class="checkbox-container">
-                                    <input type="checkbox" class="day-checkbox" data-date="${dateStr}" ${selectedDates.has(dateStr) ? 'checked' : ''}>
-                                </div>
-                                `;
+                                calendarHTML += `<div class="meal-count" data-date="${dateStr}">${mealCount}명</div>`;
                             }
                             
-                            calendarHTML += '</td>';
+                            calendarHTML += `</div></td>`;
                             day++;
                         }
                     }
@@ -226,20 +232,35 @@
                 calendarHTML += '</tbody></table>';
                 calendarContainer.innerHTML = calendarHTML;
                 
-                // 체크박스 이벤트
-                document.querySelectorAll('.day-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const date = this.dataset.date;
+                // 체크박스 이벤트를 셀 클릭 이벤트로 대체
+                document.querySelectorAll('.calendar-day').forEach(day => {
+                    // 식사 인원이 있는 날짜만 선택 가능하도록
+                    if (mealCountData[day.dataset.date] !== undefined) {
+                        day.addEventListener('click', function(e) {
+                            // 식사 인원을 클릭했을 때는 이벤트 전파 방지 (수정 모달이 열림)
+                            if (e.target.classList.contains('meal-count')) {
+                                return;
+                            }
+                            
+                            const date = this.dataset.date;
+                            
+                            // 이미 선택된 날짜인지 확인하고 토글
+                            if (selectedDates.has(date)) {
+                                selectedDates.delete(date);
+                                this.classList.remove('selected');
+                            } else {
+                                selectedDates.add(date);
+                                this.classList.add('selected');
+                            }
+                            
+                            updateSelectedCountDisplay();
+                        });
                         
-                        if (this.checked) {
-                            selectedDates.add(date);
-                        } else {
-                            selectedDates.delete(date);
+                        // 선택 상태 표시
+                        if (selectedDates.has(day.dataset.date)) {
+                            day.classList.add('selected');
                         }
-                        
-                        updateSelectedCountDisplay();
-                    });
+                    }
                 });
                 
                 // 일정 수정 클릭 이벤트
@@ -308,7 +329,7 @@
                     const data = await response.json();
                     
                     if (response.ok) {
-                        showAlert('success', data.message);
+                        showAlert('danger', data.message);
                         
                         // 선택 초기화
                         selectedDates.clear();
@@ -342,10 +363,7 @@
             
             document.getElementById('delete-option').addEventListener('click', async function() {
                 contextMenu.style.display = 'none';
-                
-                if (confirm(`${selectedDate} 날짜의 식사 인원 정보를 삭제하시겠습니까?`)) {
-                    await deleteMealCount(selectedDate);
-                }
+                await deleteMealCount(selectedDate);
             });
             
             // 삭제 기능
@@ -358,7 +376,7 @@
                     const data = await response.json();
                     
                     if (response.ok) {
-                        showAlert('success', data.message);
+                        showAlert('danger', data.message);
                         // 달력 다시 렌더링
                         const [year, month] = monthInput.value.split('-');
                         renderCalendar(parseInt(year), parseInt(month));
@@ -405,7 +423,7 @@
                     
                     if (response.ok) {
                         editModal.style.display = 'none';
-                        showAlert('success', data.message);
+                        showAlert('blue', data.message);
                         
                         // 달력 다시 렌더링
                         const [year, month] = monthInput.value.split('-');

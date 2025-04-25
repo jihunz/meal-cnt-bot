@@ -6,9 +6,11 @@
   --dark-color: #343a40;
   --danger-color: #dc3545;
   --success-color: #28a745;
+  --blue-color: #007bff;
   --today-bg-color: rgba(135, 206, 250, 0.25);
   --sunday-bg-color: rgba(255, 200, 200, 0.3);
   --saturday-bg-color: rgba(255, 248, 180, 0.3);
+  --selected-bg-color: rgba(79, 195, 161, 0.3);
   --font-family: 'Noto Sans KR', 'Roboto', sans-serif;
   --shadow: 0 8px 16px rgba(0,0,0,0.1);
   --border-radius: 16px;
@@ -137,7 +139,7 @@ body {
 }
 
 .calendar th, .calendar td {
-  padding: 12px;
+  padding: 10px 5px;
   text-align: center;
   border: none;
   width: calc(100% / 7);
@@ -155,7 +157,19 @@ body {
   position: relative;
   background-color: #f8f9fa;
   border-radius: 12px;
-  transition: background-color 0.3s;
+  transition: background-color 0.1s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  cursor: pointer;
+}
+
+.calendar-day > div:first-child {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-weight: 500;
 }
 
 .calendar-day.today {
@@ -163,25 +177,42 @@ body {
   box-shadow: 0 0 0 2px var(--primary-color) inset;
 }
 
+.calendar-day.selected {
+  background-color: var(--selected-bg-color) !important;
+  box-shadow: 0 0 0 2px var(--accent-color) inset;
+  transform: scale(0.98);
+}
+
 .calendar-day:hover {
   background-color: rgba(74, 111, 165, 0.1);
 }
 
 .meal-count {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background-color: var(--accent-color);
   color: white;
   border-radius: 20px;
   cursor: pointer;
-  display: inline-block;
-  margin-top: 5px;
+  display: block;
+  margin: 0 auto;
+  margin-top: 3px;
+  margin-bottom: 5px;
   font-weight: 500;
   transition: all 0.3s;
+  font-size: 0.9rem;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meal-count:hover {
   transform: translateY(-2px);
   box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+
+.checkbox-container {
+  display: none; /* 체크박스 숨김 */
 }
 
 .context-menu {
@@ -283,6 +314,12 @@ body {
   color: var(--danger-color);
 }
 
+.alert-blue {
+  background-color: rgba(0, 123, 255, 0.1);
+  border-left-color: var(--blue-color);
+  color: var(--blue-color);
+}
+
 /* 2-column layout */
 .content-container {
   display: flex;
@@ -319,7 +356,7 @@ body {
   }
   
   .card {
-    padding: 1.5rem;
+    padding: 1.2rem;
   }
   
   .btn {
@@ -327,16 +364,59 @@ body {
   }
   
   .calendar th, .calendar td {
-    padding: 8px;
+    padding: 4px 2px;
   }
   
   .calendar-day {
-    min-height: 60px;
+    min-height: 50px;
   }
 
   .app-title {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
+  }
+  
+  .meal-count {
+    padding: 3px 6px;
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 5px;
+  }
+  
+  .card {
+    padding: 0.8rem;
+  }
+  
+  .calendar {
+    border-spacing: 1px;
+  }
+  
+  .calendar th {
+    font-size: 0.8rem;
+  }
+  
+  .calendar-day {
+    min-height: 40px;
+  }
+  
+  .calendar-day > div:first-child {
+    font-size: 0.9rem;
+    margin-top: 2px;
+    margin-bottom: 1px;
+  }
+  
+  .meal-count {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
   }
 }
 
