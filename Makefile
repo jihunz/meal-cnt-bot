@@ -4,10 +4,10 @@ install:
 	poetry install
 
 dev:
-	poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+	poetry run uvicorn main:app --host 0.0.0.0 --port 1200 --reload
 
 start:
-	poetry run uvicorn main:app --host 0.0.0.0 --port 8000
+	poetry run uvicorn main:app --host 0.0.0.0 --port 1200
 
 format:
 	poetry run black .

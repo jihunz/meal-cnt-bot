@@ -1,5 +1,6 @@
 import os
 import uvicorn
+import json
 from fastapi import FastAPI, Request, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,10 @@ from fastapi.templating import Jinja2Templates
 from routers import scheduler_router, meal_count_router
 from services.meal_count_service import MealCountService
 from schemas.meal_count import MealCountResult
+
+# 설정 파일 로드
+with open("config/config.json", "r") as f:
+    config = json.load(f)
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
@@ -81,7 +86,7 @@ async def shutdown_event():
 if __name__ == "__main__":
     # 실행 환경에 따라 호스트 결정
     host = "0.0.0.0"
-    port = 8000
+    port = int(config["port"])
 
     print(f"🚀 식사 인원 봇 API 서버가 시작됩니다: http://{host}:{port}")
     uvicorn.run("main:app", host=host, port=port, reload=True)
