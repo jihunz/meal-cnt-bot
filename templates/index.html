@@ -24,7 +24,7 @@
                         
                         <div class="form-group">
                             <label for="count">식사 인원</label>
-                            <input type="number" id="count" class="form-control" min="1" required placeholder="식사 인원을 입력하세요">
+                            <input type="number" id="count" class="form-control" min="0" required placeholder="식사 인원을 입력하세요">
                         </div>
                         
                         <button type="submit" class="btn btn-primary">저장</button>
@@ -73,7 +73,7 @@
                     </div>
                     <div class="form-group">
                         <label for="edit-count">식사 인원</label>
-                        <input type="number" id="edit-count" class="form-control" min="1" required>
+                        <input type="number" id="edit-count" class="form-control" min="0" required>
                     </div>
                 </form>
             </div>
@@ -326,7 +326,7 @@
                 const date = editDateInput.value;
                 const count = parseInt(editCountInput.value);
                 
-                if (!count || count < 1) {
+                if (isNaN(count) || count < 0) {
                     showAlert(calendarAlert, 'danger', '유효한 인원 수를 입력해주세요.');
                     return;
                 }
