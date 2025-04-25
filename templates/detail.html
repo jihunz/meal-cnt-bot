@@ -5,7 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VETEC 연구소 식사 인원 관리 - 예약 관리</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css').replace('http://', '//').replace('https://', '//') }}">
+    <style>
+        .checkbox-container {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+        .checkbox-container input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .calendar-day {
+            position: relative;
+        }
+        .multi-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .delete-selected {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-selected:hover {
+            background-color: #c82333;
+        }
+        .delete-selected:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .select-count {
+            font-size: 14px;
+            color: #495057;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -29,6 +69,11 @@
             <div class="form-group">
                 <label for="month">년/월 선택</label>
                 <input type="month" id="month" class="form-control">
+            </div>
+            
+            <div class="multi-action-bar">
+                <span class="select-count">0개 선택됨</span>
+                <button id="delete-selected" class="delete-selected" disabled>선택 삭제</button>
             </div>
             
             <div id="calendar-container">
@@ -83,9 +128,12 @@
             const editDateInput = document.getElementById('edit-date');
             const editCountInput = document.getElementById('edit-count');
             const alert = document.getElementById('alert');
+            const deleteSelectedBtn = document.getElementById('delete-selected');
+            const selectCountDisplay = document.querySelector('.select-count');
             
             let selectedDate = null;
             let mealCountData = {};
+            let selectedDates = new Set();
             
             // 현재 년/월로 초기화
             const today = new Date();
@@ -100,6 +148,19 @@
             monthInput.addEventListener('change', function() {
                 const [year, month] = this.value.split('-');
                 renderCalendar(parseInt(year), parseInt(month));
+                
+                // 선택 초기화
+                selectedDates.clear();
+                updateSelectedCountDisplay();
+            });
+            
+            // 선택 삭제 버튼 이벤트
+            deleteSelectedBtn.addEventListener('click', async function() {
+                if (selectedDates.size === 0) return;
+                
+                if (confirm(`선택한 ${selectedDates.size}개의 식사 인원 정보를 삭제하시겠습니까?`)) {
+                    await deleteMultipleMealCounts(Array.from(selectedDates));
+                }
             });
             
             // 달력 렌더링 함수
@@ -145,7 +206,12 @@
                                 <div>${day}</div>`;
                             
                             if (mealCount !== undefined) {
-                                calendarHTML += `<div class="meal-count" data-date="${dateStr}">${mealCount}명</div>`;
+                                calendarHTML += `
+                                <div class="meal-count" data-date="${dateStr}">${mealCount}명</div>
+                                <div class="checkbox-container">
+                                    <input type="checkbox" class="day-checkbox" data-date="${dateStr}" ${selectedDates.has(dateStr) ? 'checked' : ''}>
+                                </div>
+                                `;
                             }
                             
                             calendarHTML += '</td>';
@@ -159,6 +225,22 @@
                 
                 calendarHTML += '</tbody></table>';
                 calendarContainer.innerHTML = calendarHTML;
+                
+                // 체크박스 이벤트
+                document.querySelectorAll('.day-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const date = this.dataset.date;
+                        
+                        if (this.checked) {
+                            selectedDates.add(date);
+                        } else {
+                            selectedDates.delete(date);
+                        }
+                        
+                        updateSelectedCountDisplay();
+                    });
+                });
                 
                 // 일정 수정 클릭 이벤트
                 document.querySelectorAll('.meal-count').forEach(element => {
@@ -188,16 +270,59 @@
                         }
                     });
                 });
+                
+                // 선택 상태 업데이트
+                updateSelectedCountDisplay();
+            }
+            
+            // 선택된 개수 표시 업데이트
+            function updateSelectedCountDisplay() {
+                selectCountDisplay.textContent = `${selectedDates.size}개 선택됨`;
+                deleteSelectedBtn.disabled = selectedDates.size === 0;
             }
             
             // 데이터 불러오기
             async function fetchMealCountData() {
                 try {
-                    const response = await fetch('/api/meal-count/all');
+                    const response = await fetch('./api/meal-count/all');
                     mealCountData = await response.json();
                 } catch (error) {
                     console.error('Error fetching meal count data:', error);
                     showAlert('danger', '데이터를 불러오는 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 여러 데이터 삭제
+            async function deleteMultipleMealCounts(dates) {
+                try {
+                    const response = await fetch('./api/meal-count/delete-multiple', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            dates: dates
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showAlert('success', data.message);
+                        
+                        // 선택 초기화
+                        selectedDates.clear();
+                        updateSelectedCountDisplay();
+                        
+                        // 달력 다시 렌더링
+                        const [year, month] = monthInput.value.split('-');
+                        renderCalendar(parseInt(year), parseInt(month));
+                    } else {
+                        showAlert('danger', data.detail || '오류가 발생했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('danger', '서버 통신 중 오류가 발생했습니다.');
                 }
             }
             
@@ -226,7 +351,7 @@
             // 삭제 기능
             async function deleteMealCount(date) {
                 try {
-                    const response = await fetch(`/api/meal-count/${date}`, {
+                    const response = await fetch(`./api/meal-count/${date}`, {
                         method: 'DELETE'
                     });
                     
@@ -265,7 +390,7 @@
                 }
                 
                 try {
-                    const response = await fetch(`/api/meal-count/${date}`, {
+                    const response = await fetch(`./api/meal-count/${date}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'

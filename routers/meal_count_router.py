@@ -24,6 +24,10 @@ class MealCountData(BaseModel):
     date: date
     count: int
 
+# 다중 삭제용 데이터 모델
+class MultipleDeleteData(BaseModel):
+    dates: List[str]
+
 # 데이터 불러오기
 def load_data() -> dict:
     if not DATA_FILE.exists():
@@ -91,4 +95,31 @@ async def delete_meal_count(date_str: str):
     del data[date_str]
     save_data(data)
     
-    return {"success": True, "message": f"{date_str}의 식사 인원 정보가 삭제되었습니다."} 
+    return {"success": True, "message": f"{date_str}의 식사 인원 정보가 삭제되었습니다."}
+
+@router.post("/delete-multiple")
+async def delete_multiple_meal_counts(delete_data: MultipleDeleteData):
+    """여러 날짜의 식사 인원 정보 일괄 삭제"""
+    data = load_data()
+    deleted_count = 0
+    not_found_dates = []
+    
+    for date_str in delete_data.dates:
+        if date_str in data:
+            del data[date_str]
+            deleted_count += 1
+        else:
+            not_found_dates.append(date_str)
+    
+    save_data(data)
+    
+    message = f"{deleted_count}개의 식사 인원 정보가 삭제되었습니다."
+    if not_found_dates:
+        message += f" ({', '.join(not_found_dates)}는 찾을 수 없었습니다.)"
+    
+    return {
+        "success": True, 
+        "message": message,
+        "deleted_count": deleted_count,
+        "not_found_dates": not_found_dates
+    } 
