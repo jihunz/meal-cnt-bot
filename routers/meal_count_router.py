@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
-from datetime import date
-from pydantic import BaseModel
 import json
-import os
+from datetime import date
 from pathlib import Path
+from typing import List
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/api/meal-count",
@@ -32,7 +32,7 @@ class MultipleDeleteData(BaseModel):
 def load_data() -> dict:
     if not DATA_FILE.exists():
         return {}
-    
+
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -49,10 +49,10 @@ async def save_meal_count(meal_data: MealCountData):
     """식사 인원 정보 저장"""
     data = load_data()
     date_str = str(meal_data.date)
-    
+
     data[date_str] = meal_data.count
     save_data(data)
-    
+
     return {"success": True, "message": f"{date_str}에 {meal_data.count}명의 식사 인원이 저장되었습니다."}
 
 @router.get("/all")
@@ -65,36 +65,36 @@ async def get_all_meal_counts():
 async def get_meal_count(date_str: str):
     """특정 날짜의 식사 인원 정보 조회"""
     data = load_data()
-    
+
     if date_str not in data:
         raise HTTPException(status_code=404, detail=f"{date_str}에 대한 식사 인원 정보가 없습니다.")
-    
+
     return {"date": date_str, "count": data[date_str]}
 
 @router.put("/{date_str}")
 async def update_meal_count(date_str: str, meal_data: MealCountData):
     """특정 날짜의 식사 인원 정보 수정"""
     data = load_data()
-    
+
     if date_str not in data:
         raise HTTPException(status_code=404, detail=f"{date_str}에 대한 식사 인원 정보가 없습니다.")
-    
+
     data[date_str] = meal_data.count
     save_data(data)
-    
+
     return {"success": True, "message": f"{date_str}에 {meal_data.count}명의 식사 인원이 수정되었습니다."}
 
 @router.delete("/{date_str}")
 async def delete_meal_count(date_str: str):
     """특정 날짜의 식사 인원 정보 삭제"""
     data = load_data()
-    
+
     if date_str not in data:
         raise HTTPException(status_code=404, detail=f"{date_str}에 대한 식사 인원 정보가 없습니다.")
-    
+
     del data[date_str]
     save_data(data)
-    
+
     return {"success": True, "message": f"{date_str}의 식사 인원 정보가 삭제되었습니다."}
 
 @router.post("/delete-multiple")
@@ -103,23 +103,23 @@ async def delete_multiple_meal_counts(delete_data: MultipleDeleteData):
     data = load_data()
     deleted_count = 0
     not_found_dates = []
-    
+
     for date_str in delete_data.dates:
         if date_str in data:
             del data[date_str]
             deleted_count += 1
         else:
             not_found_dates.append(date_str)
-    
+
     save_data(data)
-    
+
     message = f"{deleted_count}개의 식사 인원 정보가 삭제되었습니다."
     if not_found_dates:
         message += f" ({', '.join(not_found_dates)}는 찾을 수 없었습니다.)"
-    
+
     return {
-        "success": True, 
+        "success": True,
         "message": message,
         "deleted_count": deleted_count,
         "not_found_dates": not_found_dates
-    } 
+    }
