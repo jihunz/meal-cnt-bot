@@ -4,7 +4,6 @@ import requests
 from googleapiclient.discovery import build
 from utils.auth import get_google_credentials
 from utils.date_util import DateUtil
-from datetime import datetime
 
 class EventService:
     """이벤트 및 날짜 관련 기능을 통합적으로 제공하는 서비스 클래스"""
