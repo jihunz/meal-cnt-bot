@@ -27,6 +27,8 @@ with open("config/config.json", "r") as f:
 
 def start_scheduler():
     """애플리케이션 시작 시 스케줄러 시작"""
+    meal_cnt_service = MealCountService()
+    meal_cnt_service.process_meal_count()
     from services.scheduler_service import SchedulerService
     scheduler = SchedulerService()
     scheduler.start()
