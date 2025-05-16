@@ -1,17 +1,17 @@
-import os
-import uvicorn
 import json
-from fastapi import FastAPI, Request, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 
 from routers import scheduler_router, meal_count_router
 from services.meal_count_service import MealCountService
-from schemas.meal_count import MealCountResult
+from utils.date_util import DateUtil
+
 
 # HTTPS 대응을 위한 StaticFiles 클래스 확장
 class SPAStaticFiles(StarletteStaticFiles):
@@ -27,8 +27,10 @@ with open("config/config.json", "r") as f:
 
 def start_scheduler():
     """애플리케이션 시작 시 스케줄러 시작"""
+    print(f'[{DateUtil.get_now()}]: ======================process_meal_count() 로직 테스트 시작======================')
     meal_cnt_service = MealCountService()
     meal_cnt_service.process_meal_count()
+    print(f'[{DateUtil.get_now()}]: ======================process_meal_count() 로직 테스트 끝======================')
     from services.scheduler_service import SchedulerService
     scheduler = SchedulerService()
     scheduler.start()
