@@ -13,4 +13,5 @@ services:
     ports:
       - "1200:1200"
     restart: always
+    network_mode: host
 
