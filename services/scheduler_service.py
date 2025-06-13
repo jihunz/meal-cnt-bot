@@ -25,7 +25,7 @@ class SchedulerService:
             'cron',
             day_of_week='mon-fri',
             hour=9,
-            minute=10
+            minute=0
         )
 
         self.scheduler.start()
