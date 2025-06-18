@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 
-from routers import scheduler_router, meal_count_router
+from routers import scheduler_router, meal_count_router, weekly_test_router
 from services.meal_count_service import MealCountService
 from utils.date_util import DateUtil
 
@@ -27,10 +27,12 @@ with open("config/config.json", "r") as f:
 
 def start_scheduler():
     """애플리케이션 시작 시 스케줄러 시작"""
-    print(f'[{DateUtil.get_now()}]: ======================process_meal_count() 로직 테스트 시작======================')
-    meal_cnt_service = MealCountService()
-    meal_cnt_service.process_meal_count()
-    print(f'[{DateUtil.get_now()}]: ======================process_meal_count() 로직 테스트 끝======================')
+    # 주간 테스트 실행
+    from services.weekly_test_service import WeeklyTestService
+    weekly_test_service = WeeklyTestService()
+    weekly_test_service.run_weekly_test()
+
+    # 스케줄러 시작
     from services.scheduler_service import SchedulerService
     scheduler = SchedulerService()
     scheduler.start()
@@ -66,6 +68,7 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(scheduler_router.router)
 app.include_router(meal_count_router.router)
+app.include_router(weekly_test_router.router)
 
 # 정적 파일 및 템플릿 설정
 app.mount("/static", SPAStaticFiles(directory="static"), name="static")

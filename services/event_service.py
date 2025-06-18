@@ -18,9 +18,13 @@ class EventService:
         self.holiday_api_key = 'o9Nl5P8j/q+4yxmDuPD/lUHILUtj804RYh/jJl0KZofUB9mSV/fWhLL1kXyTht+ylHs+cAv/77S7g4kweuVp5A=='
 
     # Calendar 관련 메소드
-    def get_event_list(self, cal_id, days=1):
+    def get_event_list(self, cal_id, days=1, target_date=None):
         """특정 기간 내의 캘린더 이벤트 목록 가져오기"""
-        start = DateUtil.get_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if target_date is None:
+            start = DateUtil.get_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            start = DateUtil.get_date_with_timezone(target_date).replace(hour=0, minute=0, second=0, microsecond=0)
+        
         end = start + datetime.timedelta(days=days)
 
         events_result = self.calendar_service.events().list(
@@ -33,38 +37,47 @@ class EventService:
 
         return events_result.get('items', [])
 
-    def check_workshop_event(self):
+    def check_workshop_event(self, target_date=None):
         """워크샵 일정 확인"""
-        for event in self.get_event_list(self.config['BUSINESS_CAL_ID'], 1):
+        for event in self.get_event_list(self.config['BUSINESS_CAL_ID'], 1, target_date):
             if '워크샵' in event['summary']:
                 return True
         return False
 
-    def check_monthly_meeting(self):
+    def check_monthly_meeting(self, target_date=None):
         """월간회의 일정 확인"""
-        events = self.get_event_list(self.config['BUSINESS_CAL_ID'], 2)
+        events = self.get_event_list(self.config['BUSINESS_CAL_ID'], 2, target_date)
         for event_item in events:
             if '월간회의' in event_item['summary']:
                 return True
         return False
 
     # Holiday 관련 메소드
-    def is_holiday(self):
+    def is_holiday(self, target_date=None):
         """현재 날짜가 휴일(주말 또는 공휴일)인지 확인"""
+        if target_date is None:
+            check_date = DateUtil.get_now()
+        else:
+            check_date = DateUtil.get_date_with_timezone(target_date)
+        
         # 주말 확인 (토요일=5, 일요일=6)
-
-        weekday = DateUtil.get_now().weekday()
+        weekday = check_date.weekday()
         if weekday in (5, 6):
             return True, '주말'
 
         # 공휴일 확인
-        return self._check_public_holiday()
+        return self._check_public_holiday(check_date)
 
-    def _check_public_holiday(self):
+    def _check_public_holiday(self, target_date=None):
         """공공 API를 통해 공휴일 확인"""
-        formatted_now = DateUtil.get_now().strftime("%Y%m%d")
-        curr_year = DateUtil.get_now().strftime("%Y")
-        curr_month = DateUtil.get_now().strftime("%m")
+        if target_date is None:
+            check_date = DateUtil.get_now()
+        else:
+            check_date = target_date
+            
+        formatted_now = check_date.strftime("%Y%m%d")
+        curr_year = check_date.strftime("%Y")
+        curr_month = check_date.strftime("%m")
 
         url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo'
         params = {
